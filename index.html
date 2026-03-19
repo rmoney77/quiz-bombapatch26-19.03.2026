@@ -27,6 +27,11 @@
   }
   .container { max-width: 520px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; position: relative; z-index: 1; }
 
+  /* VIDEO BG */
+  .video-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+  .video-bg video { width: 100%; height: 100%; object-fit: cover; opacity: 0.18; }
+  .video-bg::after { content: ''; position: absolute; inset: 0; background: rgba(13,17,23,0.82); }
+
   /* MUSIC PLAYER */
   .music-player {
     position: fixed; top: 14px; right: 14px; z-index: 999;
@@ -127,6 +132,13 @@
 </head>
 <body>
 
+<!-- VIDEO BACKGROUND -->
+<div class="video-bg">
+  <video autoplay muted loop playsinline>
+    <source src="https://i.imgur.com/kJrhxJv.mp4" type="video/mp4">
+  </video>
+</div>
+
 <!-- PLAYER DE MÚSICA -->
 <div class="music-player" id="musicPlayer" onclick="toggleMusic()">
   <span class="music-icon">🎵</span>
@@ -156,7 +168,7 @@
   const MUSIC_URL = './BombaPatch.mp3';
 
   // Cole aqui a URL do seu Google Apps Script após seguir as instruções abaixo
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyQWauBbwLbC8-cMOFZJhKF0T7W1BgN6pv9oPkQqt10G7W8L24npWtt5arb5hJy_0l-sA/exec';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyQWauBbwLbC8-cMOFZJhKFOT7W1BgN6pv9oPkQqt10G7W8L24npWtt5arb5hJy_0l-sA/exec';
   // ============================================================
 
   let userName = '', userPhone = '', userTeam = '', score = 0, currentQ = 0;
@@ -175,9 +187,14 @@
     }).catch(() => {});
   }
 
-  // Autoplay na primeira interação do usuário
+  // Tenta autoplay imediato
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      tryPlay();
+    }, 500);
+  });
+  // Fallback na primeira interação
   document.addEventListener('click', () => { if (!musicPlaying) tryPlay(); }, { once: true });
-  tryPlay(); // tenta imediato (funciona em alguns navegadores)
 
   function toggleMusic() {
     if (musicPlaying) {
