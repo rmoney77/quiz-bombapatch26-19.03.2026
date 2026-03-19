@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bomba Patch 2026 — Teste seu Nível Gamer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2DD4BF;
+    --dark-green: #0F6E56;
+    --navy: #0d1117;
+    --navy2: #161b22;
+    --navy3: #21262d;
+    --red: #EF4444;
+    --yellow: #F59E0B;
+    --white: #f0f6fc;
+    --gray: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; background: var(--navy); font-family: 'Nunito', sans-serif; color: var(--white); overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(45,212,191,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(239,68,68,0.06) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 520px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; position: relative; z-index: 1; }
+
+  /* MUSIC PLAYER */
+  .music-player {
+    position: fixed; top: 14px; right: 14px; z-index: 999;
+    background: rgba(22,27,34,0.92);
+    border: 1px solid rgba(45,212,191,0.25);
+    border-radius: 99px;
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .music-player:hover { border-color: var(--green); }
+  .music-icon { font-size: 15px; }
+  .music-label { font-size: 11px; font-weight: 800; color: var(--gray); letter-spacing: 0.5px; }
+  .music-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; flex-shrink:0; }
+  .music-dot.paused { background: var(--gray); animation: none; }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)} }
+
+  /* PROGRESS */
+  .progress-wrap { width: 100%; margin-bottom: 28px; display: none; }
+  .progress-wrap.visible { display: block; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .progress-bar { height: 6px; background: var(--navy3); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--dark-green)); border-radius: 99px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+
+  /* CARD */
+  .card { width: 100%; background: var(--navy2); border: 1px solid rgba(45,212,191,0.15); border-radius: 20px; padding: 32px 28px; position: relative; overflow: hidden; animation: slideUp 0.4s cubic-bezier(.4,0,.2,1); }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--green), transparent); }
+  @keyframes slideUp { from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)} }
+
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.3); color: var(--green); font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 99px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+  .badge .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 1.5s infinite; }
+
+  .title { font-family: 'Bebas Neue', sans-serif; font-size: 42px; line-height: 1; letter-spacing: 2px; margin-bottom: 12px; }
+  .title span { color: var(--green); }
+
+  .subtitle { font-size: 15px; color: var(--gray); line-height: 1.6; margin-bottom: 28px; }
+  .subtitle strong { color: var(--white); }
+
+  .question-emoji { font-size: 48px; margin-bottom: 16px; display: block; animation: bounce 0.6s cubic-bezier(.4,0,.2,1); }
+  @keyframes bounce { 0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)} }
+  .question-text { font-size: 20px; font-weight: 900; line-height: 1.4; margin-bottom: 24px; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option { background: var(--navy3); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 14px; font-size: 15px; font-weight: 700; color: var(--white); text-align: left; width: 100%; }
+  .option:hover { border-color: var(--green); background: rgba(45,212,191,0.08); transform: translateX(4px); }
+  .option:active { transform: scale(0.98); }
+  .opt-icon { font-size: 22px; flex-shrink: 0; }
+
+  .name-input { width: 100%; background: var(--navy3); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px 18px; font-size: 16px; font-weight: 700; color: var(--white); font-family: 'Nunito', sans-serif; outline: none; transition: border-color 0.2s; margin-bottom: 16px; }
+  .name-input::placeholder { color: var(--gray); }
+  .name-input:focus { border-color: var(--green); }
+
+  .phone-wrap { display: flex; gap: 10px; margin-bottom: 16px; }
+  .phone-ddi { background: var(--navy3); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px 12px; font-size: 15px; font-weight: 700; color: var(--white); font-family: 'Nunito', sans-serif; outline: none; width: 76px; flex-shrink: 0; text-align: center; }
+  .phone-input { flex: 1; background: var(--navy3); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px 18px; font-size: 16px; font-weight: 700; color: var(--white); font-family: 'Nunito', sans-serif; outline: none; transition: border-color 0.2s; }
+  .phone-input::placeholder { color: var(--gray); }
+  .phone-input:focus { border-color: var(--green); }
+
+  .btn { width: 100%; padding: 18px; border-radius: 14px; border: none; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-green { background: linear-gradient(135deg, var(--green), var(--dark-green)); color: #0a2e28; }
+  .btn-green:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(45,212,191,0.3); }
+  .btn-red { background: linear-gradient(135deg, #EF4444, #B91C1C); color: #fff; }
+  .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.3); }
+  .btn:active { transform: scale(0.98) !important; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+  .typing { display: flex; gap: 5px; padding: 12px 0; align-items: center; }
+  .typing span { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: typing 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-6px);opacity:1} }
+
+  .bubbles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .bubble { background: var(--navy3); border-radius: 0 16px 16px 16px; padding: 12px 16px; font-size: 15px; line-height: 1.6; color: var(--white); max-width: 92%; opacity: 0; transform: translateY(10px); transition: all 0.35s; border: 1px solid rgba(255,255,255,0.06); }
+  .bubble.show { opacity: 1; transform: translateY(0); }
+  .bubble strong { color: var(--green); }
+  .bubble .yellow { color: var(--yellow); }
+
+  .price-box { background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.2); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; }
+  .price-from { font-size: 13px; color: var(--gray); text-decoration: line-through; font-weight: 700; margin-bottom: 4px; }
+  .price-main { font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: var(--green); line-height: 1; letter-spacing: 2px; }
+  .price-main span { font-size: 24px; }
+  .price-note { font-size: 12px; color: var(--gray); font-weight: 800; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .guarantee { display: flex; align-items: center; gap: 10px; background: rgba(15,110,86,0.15); border: 1px solid rgba(45,212,191,0.1); border-radius: 12px; padding: 12px 16px; margin-top: 14px; font-size: 12px; color: #6EE7B7; font-weight: 700; line-height: 1.5; }
+
+  .result-icon { font-size: 64px; display: block; text-align: center; margin-bottom: 16px; animation: bounce 0.6s cubic-bezier(.4,0,.2,1); }
+  .result-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; text-align: center; letter-spacing: 2px; margin-bottom: 8px; }
+  .result-desc { font-size: 14px; color: var(--gray); text-align: center; line-height: 1.6; margin-bottom: 24px; }
+
+  .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; animation: confettiFall linear forwards; z-index: 9999; pointer-events: none; }
+  @keyframes confettiFall { to{transform:translateY(110vh) rotate(720deg);opacity:0} }
+</style>
+</head>
+<body>
+
+<!-- PLAYER DE MÚSICA -->
+<div class="music-player" id="musicPlayer" onclick="toggleMusic()">
+  <span class="music-icon">🎵</span>
+  <span class="music-label" id="musicLabel">MUSIC</span>
+  <div class="music-dot" id="musicDot"></div>
+</div>
+
+<div class="container">
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span id="progressText">Pergunta 1 de 5</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+  // ============================================================
+  // ⚙️ CONFIG — EDITE APENAS AQUI
+  // ============================================================
+  const CHECKOUT_URL  = 'https://ggcheckout.com.br/checkout/v3/KcpnHsnzUlQCtkURw6OF';
+  const WHATSAPP_GROUP = 'https://chat.whatsapp.com/SEU-LINK-DO-GRUPO';
+  const MUSIC_URL = './BombaPatch.mp3';
+
+  // Cole aqui a URL do seu Google Apps Script após seguir as instruções abaixo
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyQWauBbwLbC8-cMOFZJhKF0T7W1BgN6pv9oPkQqt10G7W8L24npWtt5arb5hJy_0l-sA/exec';
+  // ============================================================
+
+  let userName = '', userPhone = '', userTeam = '', score = 0, currentQ = 0;
+  let musicPlaying = false;
+
+  // ── MÚSICA ──────────────────────────────────────────────────
+  const audio = new Audio(MUSIC_URL);
+  audio.loop = true;
+  audio.volume = 0.4;
+
+  function tryPlay() {
+    audio.play().then(() => {
+      musicPlaying = true;
+      document.getElementById('musicLabel').textContent = 'PAUSAR';
+      document.getElementById('musicDot').classList.remove('paused');
+    }).catch(() => {});
+  }
+
+  // Autoplay na primeira interação do usuário
+  document.addEventListener('click', () => { if (!musicPlaying) tryPlay(); }, { once: true });
+  tryPlay(); // tenta imediato (funciona em alguns navegadores)
+
+  function toggleMusic() {
+    if (musicPlaying) {
+      audio.pause(); musicPlaying = false;
+      document.getElementById('musicLabel').textContent = 'PLAY';
+      document.getElementById('musicDot').classList.add('paused');
+    } else {
+      audio.play(); musicPlaying = true;
+      document.getElementById('musicLabel').textContent = 'PAUSAR';
+      document.getElementById('musicDot').classList.remove('paused');
+    }
+  }
+
+  // ── PERGUNTAS ────────────────────────────────────────────────
+  const questions = [
+    {
+      emoji: '⚽',
+      text: 'Qual é o seu time do coração?',
+      options: [
+        { icon: '🔴⚫', text: 'Flamengo — Mengão!', points: 2 },
+        { icon: '⚪⚫', text: 'Corinthians — Timão!', points: 2 },
+        { icon: '🟢',   text: 'Palmeiras — Verdão!', points: 2 },
+        { icon: '🏆',   text: 'Outro time brasileiro', points: 2 },
+      ]
+    },
+    {
+      emoji: '🎮',
+      text: 'Com que frequência você joga futebol no celular?',
+      options: [
+        { icon: '🔥', text: 'Todo dia — sou viciado!', points: 3 },
+        { icon: '📅', text: 'Algumas vezes por semana', points: 2 },
+        { icon: '😅', text: 'De vez em quando', points: 1 },
+        { icon: '👀', text: 'Ainda não comecei, mas quero', points: 2 },
+      ]
+    },
+    {
+      emoji: '😤',
+      text: 'O que mais te irrita no seu jogo de futebol atual?',
+      options: [
+        { icon: '❌', text: 'Elenco desatualizado — jogador saiu há 2 anos!', points: 3 },
+        { icon: '👕', text: 'Uniforme errado ou antigo', points: 3 },
+        { icon: '😬', text: 'Gráfico horrível', points: 2 },
+        { icon: '🤷', text: 'Ainda não jogo nenhum', points: 1 },
+      ]
+    },
+    {
+      emoji: '💰',
+      text: 'Quanto você pagaria por um jogo com elenco 2026, gráfico HD e times brasileiros completos?',
+      options: [
+        { icon: '💸', text: 'Até R$50 — vale muito!', points: 3 },
+        { icon: '💰', text: 'Uns R$20 a R$30', points: 3 },
+        { icon: '🤑', text: 'Menos de R$15', points: 2 },
+      ]
+    },
+    {
+      emoji: '📱',
+      text: 'Qual é o sistema do seu celular?',
+      options: [
+        { icon: '🤖', text: 'Android — tô pronto!', points: 3 },
+        { icon: '🍎', text: 'iPhone', points: 1 },
+        { icon: '🤷', text: 'Não sei ao certo', points: 2 },
+      ]
+    }
+  ];
+
+  // ── RENDER ───────────────────────────────────────────────────
+  const app = document.getElementById('app');
+  function render(html) { app.innerHTML = `<div class="card screen">${html}</div>`; }
+
+  function updateProgress(step, total) {
+    document.getElementById('progressWrap').classList.add('visible');
+    const pct = Math.round((step / total) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = `Pergunta ${step} de ${total}`;
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
+  function hideProgress() { document.getElementById('progressWrap').classList.remove('visible'); }
+
+  // ── TELAS ────────────────────────────────────────────────────
+  function showIntro() {
+    hideProgress();
+    render(`
+      <div class="badge"><div class="dot"></div> 🔥 ATUALIZADO 2026</div>
+      <img src="https://i.imgur.com/Fe5e1HD.jpeg" alt="Bomba Patch 2026"
+        style="width:100%;border-radius:14px;margin-bottom:20px;display:block;" />
+      <div class="title" style="font-size:34px;">BAIXE AGORA E<br>JOGUE O <span>BOMBA</span><br><span>PATCH</span> 2026! ⚽</div>
+      <p class="subtitle" style="margin-top:12px;">
+        <strong>Elencos reais, uniformes novos e gráficos HD</strong> — tudo atualizado pra essa temporada direto no seu Android!
+      </p>
+      <button class="btn btn-red" onclick="showNameScreen()" style="font-size:20px;">
+        ⚡ QUERO JOGAR AGORA
+      </button>
+      <p style="font-size:12px;color:var(--gray);text-align:center;margin-top:10px;">
+        🛡️ Garantia de 7 dias • Compra única • Sem mensalidade
+      </p>
+    `);
+  }
+
+  function showNameScreen() {
+    hideProgress();
+    render(`
+      <div class="badge"><div class="dot"></div> PASSO 1</div>
+      <span class="question-emoji">😎</span>
+      <p class="question-text">Primeiro... como eu te chamo?</p>
+      <input class="name-input" id="nameInput" type="text" placeholder="Digite seu nome aqui..." maxlength="30"
+        onkeydown="if(event.key==='Enter') saveName()" />
+      <button class="btn btn-green" onclick="saveName()">AVANÇAR →</button>
+    `);
+    setTimeout(() => document.getElementById('nameInput')?.focus(), 300);
+  }
+
+  function saveName() {
+    const val = (document.getElementById('nameInput').value || '').trim();
+    if (!val) {
+      document.getElementById('nameInput').style.borderColor = 'var(--red)';
+      document.getElementById('nameInput').placeholder = 'Ei, me conta seu nome! 😅';
+      return;
+    }
+    userName = val.split(' ')[0];
+    currentQ = 0; score = 0;
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = questions[currentQ];
+    updateProgress(currentQ + 1, questions.length);
+    render(`
+      <span class="question-emoji">${q.emoji}</span>
+      <p class="question-text">${q.text}</p>
+      <div class="options">
+        ${q.options.map((o, i) => `
+          <button class="option" onclick="selectOption(${i}, ${o.points}, \`${o.text.replace(/`/g,"'")}\`)">
+            <span class="opt-icon">${o.icon}</span>
+            <span>${o.text}</span>
+          </button>`).join('')}
+      </div>
+    `);
+  }
+
+  function selectOption(idx, points, text) {
+    score += points;
+    if (currentQ === 0) userTeam = text.split('—')[0].trim();
+    currentQ++;
+    if (currentQ < questions.length) setTimeout(showQuestion, 280);
+    else setTimeout(showTyping, 280);
+  }
+
+  function showTyping() {
+    hideProgress();
+    render(`
+      <div style="text-align:center;padding:20px 0;">
+        <p style="font-size:15px;color:var(--gray);margin-bottom:20px;">
+          Analisando seu perfil gamer, ${userName}...
+        </p>
+        <div class="typing" style="justify-content:center">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `);
+    setTimeout(showResult, 2200);
+  }
+
+  function showResult() {
+    const maxScore = questions.reduce((a, q) => a + Math.max(...q.options.map(o => o.points)), 0);
+    const pct = Math.round((score / maxScore) * 100);
+    let level, icon, color, desc;
+    if (pct >= 80) {
+      level='LENDA DO FUTEBOL'; icon='🏆'; color='var(--yellow)';
+      desc=`${userName}, você é craque das craques! Merece o melhor — sem elenco desatualizado, sem desculpa.`;
+    } else if (pct >= 55) {
+      level='JOGADOR PROFISSIONAL'; icon='⚽'; color='var(--green)';
+      desc=`${userName}, você tá no nível certo! Joga com frequência e sabe o que quer num jogo mobile.`;
+    } else {
+      level='TALENTO EM ASCENSÃO'; icon='🚀'; color='var(--red)';
+      desc=`${userName}, você tá chegando agora — e a hora de começar com o pé direito é essa!`;
+    }
+
+    render(`
+      <div style="text-align:center;margin-bottom:20px;">
+        <div class="badge" style="justify-content:center"><div class="dot"></div> RESULTADO</div>
+        <span class="result-icon">${icon}</span>
+        <div class="result-title" style="color:${color}">${level}</div>
+        <p class="result-desc">${desc}</p>
+      </div>
+      <div class="bubbles">
+        <div class="bubble" id="b1">🎯 Baseado nas suas respostas, encontrei o jogo perfeito pra você...</div>
+        <div class="bubble" id="b2">⚡ <strong>BOMBA PATCH MOBI 2026</strong> — futebol brasileiro completo no seu Android!</div>
+        <div class="bubble" id="b3">
+          ✅ Elenco 2026 atualizado &nbsp;✅ Uniformes novos<br>
+          ✅ Jogadores com rosto real &nbsp;✅ Série A e B<br>
+          ✅ Ligas europeias &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✅ Gráficos HD
+        </div>
+      </div>
+      <div class="price-box">
+        <p class="price-from">De R$ 29,90</p>
+        <p class="price-main"><span>R$</span> 9,98</p>
+        <p class="price-note">Pagamento único — sem mensalidade jamais</p>
+      </div>
+      <button class="btn btn-red" onclick="showPhoneScreen()" style="margin-bottom:12px;">
+        ⚽ QUERO MEU TIME AGORA
+      </button>
+      <div class="guarantee">🛡️ Garantia de 7 dias — não gostou, devolvemos tudo. Sem perguntas.</div>
+    `);
+
+    setTimeout(() => showBubble('b1'), 400);
+    setTimeout(() => showBubble('b2'), 900);
+    setTimeout(() => showBubble('b3'), 1400);
+    if (pct >= 80) launchConfetti();
+  }
+
+  function showBubble(id) {
+    document.getElementById(id)?.classList.add('show');
+  }
+
+  function showPhoneScreen() {
+    render(`
+      <div class="badge"><div class="dot"></div> ÚLTIMO PASSO</div>
+      <span class="question-emoji">📲</span>
+      <p class="question-text">${userName}, só mais uma coisa rápida...</p>
+      <div class="bubbles">
+        <div class="bubble show">
+          Me passa seu WhatsApp pra eu te enviar o <strong>acesso imediato</strong> e o tutorial de instalação 🎮
+        </div>
+        <div class="bubble show" style="margin-top:4px;">
+          <span class="yellow">⚡ Promessa:</span> zero spam. Só o acesso ao jogo.
+        </div>
+      </div>
+      <div class="phone-wrap">
+        <input class="phone-ddi" value="+55" readonly />
+        <input class="phone-input" id="phoneInput" type="tel" placeholder="(11) 99999-9999" maxlength="15"
+          oninput="maskPhone(this)" onkeydown="if(event.key==='Enter') savePhone()" />
+      </div>
+      <button class="btn btn-red" id="submitBtn" onclick="savePhone()">
+        ⚽ GARANTIR MEU ACESSO — R$9,98
+      </button>
+      <p style="font-size:12px;color:var(--gray);text-align:center;margin-top:12px;">
+        🔒 Seus dados estão seguros. Não compartilhamos com ninguém.
+      </p>
+    `);
+    setTimeout(() => document.getElementById('phoneInput')?.focus(), 300);
+  }
+
+  function maskPhone(input) {
+    let v = input.value.replace(/\D/g,'');
+    if (v.length > 11) v = v.slice(0,11);
+    if (v.length > 6)      v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+    else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+    else if (v.length > 0) v = `(${v}`;
+    input.value = v;
+  }
+
+  function savePhone() {
+    const val = (document.getElementById('phoneInput').value || '').replace(/\D/g,'');
+    if (val.length < 10) {
+      document.getElementById('phoneInput').style.borderColor = 'var(--red)';
+      document.getElementById('phoneInput').placeholder = 'Digite um número válido 😅';
+      return;
+    }
+    userPhone = val;
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.textContent = 'SALVANDO...'; btn.disabled = true; }
+    sendToSheets();
+  }
+
+  // ── GOOGLE SHEETS ────────────────────────────────────────────
+  function sendToSheets() {
+    const params = new URLSearchParams({
+      nome:      userName,
+      whatsapp:  userPhone,
+      time:      userTeam,
+      pontuacao: score
+    });
+    const url = SHEETS_URL + '?' + params.toString();
+    // Script tag trick — bypasses CORS 100%
+    const s = document.createElement('script');
+    s.src = url + '&callback=onSheetsDone';
+    document.body.appendChild(s);
+    // Fallback after 4s
+    setTimeout(goToCheckout, 4000);
+  }
+  function onSheetsDone() { goToCheckout(); }
+
+  function goToCheckout() {
+    hideProgress();
+    render(`
+      <div style="text-align:center;padding:20px 0;">
+        <span style="font-size:56px;display:block;margin-bottom:16px;">🚀</span>
+        <div class="title" style="font-size:32px;margin-bottom:8px;">
+          QUASE LÁ,<br><span>${userName.toUpperCase()}!</span>
+        </div>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:24px;line-height:1.6;">
+          Te redirecionando para o checkout seguro...<br>
+          Finalize agora e comece a jogar em
+          <strong style="color:var(--green)">3 minutos!</strong>
+        </p>
+        <div class="typing" style="justify-content:center;margin-bottom:24px;">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    `);
+    launchConfetti();
+    setTimeout(() => { window.location.href = CHECKOUT_URL; }, 2000);
+  }
+
+  function showGroup() {
+    hideProgress();
+    render(`
+      <div class="badge"><div class="dot"></div> ESPERA AÍ</div>
+      <span class="result-icon">🎮</span>
+      <div class="result-title">${userName ? userName.toUpperCase()+',' : ''}<br>SEM PRESSÃO!</div>
+      <p class="result-desc">Todo dia compartilho patches e novidades de games mobile. Sem spam, só conteúdo bom.</p>
+      <button class="btn btn-green" onclick="window.location.href='${WHATSAPP_GROUP}'" style="margin-bottom:12px;">
+        📲 ENTRAR NO GRUPO GRÁTIS
+      </button>
+      <button onclick="goToCheckout()" style="background:none;border:none;color:var(--gray);font-size:13px;cursor:pointer;width:100%;padding:8px;font-family:'Nunito',sans-serif;font-weight:700;">
+        Ou clique aqui para garantir o Bomba Patch por R$9,98
+      </button>
+    `);
+  }
+
+  function launchConfetti() {
+    const colors = ['#2DD4BF','#EF4444','#F59E0B','#fff','#0F6E56'];
+    for (let i = 0; i < 60; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*.5}s`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }, i * 30);
+    }
+  }
+
+  showIntro();
+</script>
+</body>
+</html>
